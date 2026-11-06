@@ -1,0 +1,49 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SupportSense - Intent Classifier Demo</title><style>
+:root{--bg:#0f1115;--card:#1a1e27;--bd:#2a2f3a;--fg:#e8ebf0;--mut:#8b93a7;--acc:#4f8cff}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--fg);min-height:100vh}
+.wrap{max-width:720px;margin:0 auto;padding:40px 20px}h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);font-size:14px;margin-bottom:24px}
+label{font-size:13px;color:var(--mut);display:block;margin-bottom:6px}
+textarea{width:100%;min-height:90px;background:var(--card);border:1px solid var(--bd);border-radius:10px;color:var(--fg);padding:12px;font-size:15px;resize:vertical;font-family:inherit}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 16px}.chip{background:var(--card);border:1px solid var(--bd);color:var(--mut);border-radius:20px;padding:6px 12px;font-size:12.5px;cursor:pointer}.chip:hover{color:var(--fg);border-color:var(--acc)}
+button{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer}button:disabled{opacity:.6;cursor:default}
+.result{margin-top:22px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:18px;display:none}
+.badge{display:inline-block;padding:6px 14px;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:.3px}
+.conf{margin-top:14px}.conf .t{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-bottom:6px}
+.bar{height:8px;background:#0d0f14;border-radius:6px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--acc)}
+.kt{margin-top:16px}.kt .h{font-size:12px;color:var(--mut);margin-bottom:8px}.kt .c{display:flex;flex-wrap:wrap;gap:6px}.kt .c span{background:#12151c;border:1px solid var(--bd);border-radius:6px;padding:4px 9px;font-size:12px;color:var(--fg)}
+.alt{margin-top:16px}.alt .h{font-size:12px;color:var(--mut);margin-bottom:8px}.altr{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #20242e;color:var(--mut)}
+.note{margin-top:26px;font-size:12px;color:#5b637a}</style></head><body><div class="wrap">
+<h1>SupportSense</h1><div class="sub">Lightweight ML customer-support intent classifier &mdash; TF-IDF + Logistic Regression</div>
+<label for="q">Type a customer message</label>
+<textarea id="q">where is my loan and when will it be approved?</textarea>
+<div class="chips" id="chips"></div>
+<button id="go">Classify</button>
+<div class="result" id="res"></div>
+<div class="note">SupportSense &middot; demo &middot; FastAPI + scikit-learn &middot; CPU inference &lt;50 ms</div>
+<script>
+var SAMPLES=["where is my loan?","i want to borrow 3000 sar","my payment failed again","how do i start investing?","this is not fair, i want a refund","hello, i need help"];
+var COLORS={loan_status:"#4f8cff",request_loan:"#39b583",payment_issue:"#e0a13a",invest:"#a06bff",complaint:"#e0564f",general:"#5b6b86"};
+var chips=document.getElementById('chips');
+SAMPLES.forEach(function(s){var c=document.createElement('div');c.className='chip';c.textContent=s;c.onclick=function(){document.getElementById('q').value=s;predict()};chips.appendChild(c)});
+document.getElementById('go').onclick=predict;
+document.getElementById('q').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();predict()}});
+function predict(){
+ var q=document.getElementById('q').value.trim();var res=document.getElementById('res');var btn=document.getElementById('go');
+ btn.disabled=true;
+ fetch('/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:q})})
+ .then(function(r){return r.json()})
+ .then(function(d){
+   var col=COLORS[d.intent]||'#8b93a7';res.style.display='block';
+   var html='<span class="badge" style="background:'+col+'22;color:'+col+';border:1px solid '+col+'55">'+d.intent.replace(/_/g,' ')+'</span>';
+   html+='<div class="conf"><div class="t"><span>Confidence</span><span>'+d.confidence_pct+'%</span></div><div class="bar"><i style="width:'+d.confidence_pct+'%"></i></div></div>';
+   html+='<div class="kt"><div class="h">Signal terms</div><div class="c">'+(d.key_terms||[]).map(function(t){return '<span>'+t+'</span>'}).join('')+'</div></div>';
+   html+='<div class="alt"><div class="h">Also considered</div>'+
+     (d.alternatives||[]).map(function(a){return '<div class="altr"><span>'+a.intent.replace(/_/g,' ')+'</span><span>'+(a.confidence*100).toFixed(1)+'%</span></div>'}).join('')+'</div>';
+   res.innerHTML=html;
+ })
+ .catch(function(e){res.style.display='block';res.innerHTML='<span class="badge" style="color:#e0564f">error: '+e+'</span>'});
+ btn.disabled=false;
+}
+predict();
+</script></div></body></html>

@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+# generated artifacts (recreate with: python train.py)
+model.joblib
+metrics.json
+# local-only (screenshots used for the report, helper scripts)
+shots/
+make_report.py
+render_pdf.py
+SupportSense_Project_Report.pdf
+.DS_Store
